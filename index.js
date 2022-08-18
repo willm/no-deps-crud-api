@@ -1,4 +1,6 @@
 import {createServer} from 'http';
-import {App} from './lib/app';
+import {App, Storage} from './lib/app.js';
 
-createServer(App()).listen(2000);
+const storage = Storage();
+await storage.reset();
+createServer(App(storage)).listen(2000);
