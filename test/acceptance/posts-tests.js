@@ -1,6 +1,7 @@
 import test from 'node:test';
 import * as assert from 'assert';
-import {App, Storage} from '../../lib/app.js';
+import {App} from '../../lib/app.js';
+import {Storage} from '../../lib/storage.js';
 import {Readable} from 'stream';
 
 class TestRequest extends Readable {
@@ -44,12 +45,19 @@ class AssertingResponse {
 
 test('Posts API', async t => {
   const storage = Storage();
-  await t.test('Getting posts', async () => {
+  await t.test('Listing posts', async () => {
     await storage.reset();
+    const date = new Date().getTime();
+    const post = {
+      title: '🍦 Node JS is fun',
+      date,
+      body: 'Writing a CRUD api in pure node'
+    };
+    await storage.add(post)
     return await new Promise((resolve) => {
       const app = App(storage);
       const request = new TestRequest('GET', '/posts', null);
-      const response = new AssertingResponse(200, {posts: []}, resolve);
+      const response = new AssertingResponse(200, {posts: [date]}, resolve);
       app(request, response);
     });
   });
@@ -94,6 +102,58 @@ test('Posts API', async t => {
       const response = new AssertingResponse(200, {
         posts: []
       }, resolve);
+      app(request, response);
+    });
+  });
+
+  await t.test('Modifying a post', async _ => {
+    await storage.reset();
+    const date = new Date().getTime();
+    const post = {
+      title: '🍦 Node JS is fun',
+      date,
+      body: 'Writing a CRUD api in pure node'
+    };
+    await storage.add(post)
+
+    post.title = 'Amended title';
+
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'PUT',
+        `/posts`,
+        JSON.stringify(post)
+      );
+      const response = new AssertingResponse(200, {
+        posts: [
+          date
+        ]
+      }, resolve);
+      app(request, response);
+    });
+  });
+
+  await t.test('Geting a post', async _ => {
+    await storage.reset();
+    const date = new Date().getTime();
+    const post = {
+      title: '🍦 Node JS is fun',
+      date,
+      body: 'Writing a CRUD api in pure node'
+    };
+    await storage.add(post)
+
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'GET',
+        `/posts/${date}`
+      );
+      const response = new AssertingResponse(
+        200,
+        JSON.stringify(post), resolve
+      );
       app(request, response);
     });
   });

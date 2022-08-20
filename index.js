@@ -1,5 +1,6 @@
 import {createServer} from 'http';
-import {App, Storage} from './lib/app.js';
+import {App} from './lib/app.js';
+import {Storage} from './lib/storage.js';
 
 const storage = Storage();
 await storage.reset();
