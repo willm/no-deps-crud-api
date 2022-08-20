@@ -100,6 +100,22 @@ test('Posts API', async t => {
     });
   });
 
+  await t.test('Adding a post with an invalid schema', async _ => {
+    await storage.reset();
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'POST',
+        '/posts',
+        JSON.stringify({wobble: 5, shnozzle: 'definitely'})
+      );
+      const response = new AssertingResponse(400, {
+        message: 'Post must conform to post schema'
+      }, resolve);
+      app(request, response);
+    });
+  });
+
   await t.test('Deleting a post', async _ => {
     await storage.reset();
     const date = new Date().getTime();
@@ -169,6 +185,30 @@ test('Posts API', async t => {
       );
       const response = new AssertingResponse(400, {
         message: 'Post must be valid JSON'
+      }, resolve);
+      app(request, response);
+    });
+  });
+
+  await t.test('Modifying a post an with invalid schema', async _ => {
+    await storage.reset();
+    const date = new Date().getTime();
+    const post = {
+      title: '🍦 Node JS is fun',
+      date,
+      body: 'Writing a CRUD api in pure node'
+    };
+    await storage.add(post)
+
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'POST',
+        '/posts',
+        JSON.stringify({wobble: 5, shnozzle: 'definitely'})
+      );
+      const response = new AssertingResponse(400, {
+        message: 'Post must conform to post schema'
       }, resolve);
       app(request, response);
     });
