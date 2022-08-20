@@ -84,6 +84,22 @@ test('Posts API', async t => {
     });
   });
 
+  await t.test('Adding a post with invalid JSON', async _ => {
+    await storage.reset();
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'POST',
+        '/posts',
+        '{..some_in£#!valid'
+      );
+      const response = new AssertingResponse(400, {
+        message: 'Post must be valid json'
+      }, resolve);
+      app(request, response);
+    });
+  });
+
   await t.test('Deleting a post', async _ => {
     await storage.reset();
     const date = new Date().getTime();
