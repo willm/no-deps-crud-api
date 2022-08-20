@@ -94,7 +94,7 @@ test('Posts API', async t => {
         '{..some_in£#!valid'
       );
       const response = new AssertingResponse(400, {
-        message: 'Post must be valid json'
+        message: 'Post must be valid JSON'
       }, resolve);
       app(request, response);
     });
@@ -145,6 +145,30 @@ test('Posts API', async t => {
         posts: [
           date
         ]
+      }, resolve);
+      app(request, response);
+    });
+  });
+
+  await t.test('Modifying a post with invalid JSON', async _ => {
+    await storage.reset();
+    const date = new Date().getTime();
+    const post = {
+      title: '🍦 Node JS is fun',
+      date,
+      body: 'Writing a CRUD api in pure node'
+    };
+    await storage.add(post)
+
+    return await new Promise((resolve) => {
+      const app = App(storage);
+      const request = new TestRequest(
+        'PUT',
+        `/posts`,
+        's0mEGarbage}}.'
+      );
+      const response = new AssertingResponse(400, {
+        message: 'Post must be valid JSON'
       }, resolve);
       app(request, response);
     });
