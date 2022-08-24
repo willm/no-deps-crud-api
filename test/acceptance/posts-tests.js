@@ -3,6 +3,7 @@ import * as assert from 'assert';
 import {App} from '../../lib/app.js';
 import {Storage} from '../../lib/storage.js';
 import {Readable} from 'stream';
+import {randomUUID as uuid} from 'crypto';
 
 class TestRequest extends Readable {
   url;
@@ -49,6 +50,7 @@ test('Posts API', async t => {
     await storage.reset();
     const date = new Date().getTime();
     const post = {
+      id: uuid(),
       title: '🍦 Node JS is fun',
       date,
       body: 'Writing a CRUD api in pure node'
@@ -57,7 +59,7 @@ test('Posts API', async t => {
     return await new Promise((resolve) => {
       const app = App(storage);
       const request = new TestRequest('GET', '/posts', null);
-      const response = new AssertingResponse(200, {posts: [date]}, resolve);
+      const response = new AssertingResponse(200, {posts: [post.id]}, resolve);
       app(request, response);
     });
   });
@@ -70,7 +72,8 @@ test('Posts API', async t => {
       const post = {
         title: '🍦 Node JS is fun',
         date,
-        body: 'Writing a CRUD api in pure node'
+        body: 'Writing a CRUD api in pure node',
+        id: uuid()
       };
       const request = new TestRequest(
         'POST',
@@ -78,7 +81,7 @@ test('Posts API', async t => {
         JSON.stringify(post)
       );
       const response = new AssertingResponse(201, {
-        posts: [post.date]
+        posts: [post.id]
       }, resolve);
       app(request, response);
     });
@@ -122,14 +125,15 @@ test('Posts API', async t => {
     const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
+      id: uuid()
     };
     await storage.add(post)
     return await new Promise((resolve) => {
       const app = App(storage);
       const request = new TestRequest(
         'DELETE',
-        `/posts/${date}`
+        `/posts/${post.id}`
       );
       const response = new AssertingResponse(200, {
         posts: []
@@ -139,12 +143,11 @@ test('Posts API', async t => {
   });
 
   await t.test('Modifying a post', async _ => {
-    await storage.reset();
-    const date = new Date().getTime();
-    const post = {
+    await storage.reset(); const date = new Date().getTime(); const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
+      id: uuid()
     };
     await storage.add(post)
 
@@ -159,7 +162,7 @@ test('Posts API', async t => {
       );
       const response = new AssertingResponse(200, {
         posts: [
-          date
+          post.id
         ]
       }, resolve);
       app(request, response);
@@ -172,7 +175,8 @@ test('Posts API', async t => {
     const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
+      id: uuid()
     };
     await storage.add(post)
 
@@ -196,7 +200,8 @@ test('Posts API', async t => {
     const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
+      id: uuid()
     };
     await storage.add(post)
 
@@ -214,13 +219,14 @@ test('Posts API', async t => {
     });
   });
 
-  await t.test('Geting a post', async _ => {
+  await t.test('Getting a post', async _ => {
     await storage.reset();
     const date = new Date().getTime();
     const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
+      id: uuid()
     };
     await storage.add(post)
 
@@ -228,7 +234,7 @@ test('Posts API', async t => {
       const app = App(storage);
       const request = new TestRequest(
         'GET',
-        `/posts/${date}`
+        `/posts/${post.id}`
       );
       const response = new AssertingResponse(
         200,
