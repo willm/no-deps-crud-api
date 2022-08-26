@@ -1,3 +1,4 @@
+import {randomUUID as uuid} from 'crypto';
 import {validatePost} from './validation.js';
 const INVALID_JSON = 'Post must be valid JSON';
 const INVALID_SCHEMA = 'Post must conform to post schema';
@@ -33,7 +34,7 @@ const listPosts = async (ctx) => {
   sendJSONResponse(res, {status: 200,  body: { posts: await storage.list() }});
 };
 
-const saveOrUpdatePost = async (successCode, ctx) => {
+const savePost = async (ctx) => {
   const {req, res, storage} = ctx;
   let post;
   try {
@@ -46,8 +47,25 @@ const saveOrUpdatePost = async (successCode, ctx) => {
   } catch (err) {
     return sendJSONResponse(res, {status: 400, body: {message: INVALID_SCHEMA}});
   }
-  await storage.add(post);
-  sendJSONResponse(res, {status: successCode, body: {posts: await storage.list()}});
+  await storage.add(uuid(), post);
+  sendJSONResponse(res, {status: 201, body: {posts: await storage.list()}});
+};
+
+const updatePost = async (ctx) => {
+  const {req, res, storage, routeMatch} = ctx;
+  let post;
+  try {
+    post = await readJSONRequestBody(req);
+  } catch (err) {
+    return sendJSONResponse(res, {status: 400, body: {message: INVALID_JSON}});
+  }
+  try {
+    validatePost(post);
+  } catch (err) {
+    return sendJSONResponse(res, {status: 400, body: {message: INVALID_SCHEMA}});
+  }
+  await storage.add(routeMatch.groups.id, post);
+  sendJSONResponse(res, {status: 200, body: {posts: await storage.list()}});
 };
 
 const deletePost = async (ctx) => {
@@ -60,10 +78,10 @@ export const App = (storage) => {
   const matchUUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
   const routes = [
     ['GET', /\/posts$/, listPosts],
-    ['POST', '/posts', saveOrUpdatePost.bind(null, 201)],
+    ['POST', '/posts', savePost],
     ['DELETE', new RegExp(`/posts/(?<id>${matchUUID})$`), deletePost],
     ['GET', new RegExp(`/posts/(?<id>${matchUUID})$`), getPost],
-    ['PUT', '/posts', saveOrUpdatePost.bind(null, 200)],
+    ['PUT', new RegExp(`/posts/(?<id>${matchUUID})$`), updatePost],
   ];
 
   return (req, res) => {

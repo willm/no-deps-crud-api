@@ -2,7 +2,6 @@ const postSchema = [
   ['date', 'number'],
   ['title', 'string'],
   ['body', 'string'],
-  ['id', 'string'],
 ];
 
 const validate = (schema, obj) => {

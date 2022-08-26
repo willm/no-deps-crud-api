@@ -18,9 +18,9 @@ export const Storage = () => {
         await mkdir(POSTS_DIR);
       }
     },
-    async add(post) {
+    async add(id, post) {
       await writeFile(
-        join(POSTS_DIR, `${post.id}.json`),
+        join(POSTS_DIR, `${id}.json`),
         JSON.stringify(post)
       );
     },
