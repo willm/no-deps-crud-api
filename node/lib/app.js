@@ -40,7 +40,7 @@ const listPosts = async (ctx) => {
   sendJSONResponse({status: 200,  body: { posts: await storage.list() }}, res);
 };
 
-const savePost = async (ctx) => {
+const saveOrUpdatePost = async (id, successStatus, ctx) => {
   const {req, res, storage} = ctx;
   let post;
   try {
@@ -53,25 +53,16 @@ const savePost = async (ctx) => {
   } catch (err) {
     return sendInvalidSchemaResponse(res);
   }
-  await storage.add(uuid(), post);
-  sendJSONResponse({status: 201, body: {posts: await storage.list()}}, res);
+  await storage.add(id, post);
+  sendJSONResponse({status: successStatus, body: {posts: await storage.list()}}, res);
+};
+
+const savePost = async (ctx) => {
+  await saveOrUpdatePost(uuid(), 201, ctx);
 };
 
 const updatePost = async (ctx) => {
-  const {req, res, storage, routeMatch} = ctx;
-  let post;
-  try {
-    post = await readJSONRequestBody(req);
-  } catch (err) {
-    return sendInvalidJSONResponse(res);
-  }
-  try {
-    validatePost(post);
-  } catch (err) {
-    return sendInvalidJSONResponse(res);
-  }
-  await storage.add(routeMatch.groups.id, post);
-  sendJSONResponse({status: 200, body: {posts: await storage.list()}}, res);
+  await saveOrUpdatePost(ctx.routeMatch.groups.id, 200, ctx);
 };
 
 const deletePost = async (ctx) => {
