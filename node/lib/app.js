@@ -1,12 +1,18 @@
 import {randomUUID as uuid} from 'crypto';
 import {validatePost} from './validation.js';
-const INVALID_JSON = 'Post must be valid JSON';
-const INVALID_SCHEMA = 'Post must conform to post schema';
 
-const sendJSONResponse = (res, options) => {
+const sendJSONResponse = (options, res) => {
   res.writeHead(options.status, {'Content-Type': 'application/json'});
   res.end(JSON.stringify(options.body));
 };
+
+const sendInvalidJSONResponse = sendJSONResponse.bind(
+  null, {status: 400, body: {message: 'Post must be valid JSON'}}
+);
+
+const sendInvalidSchemaResponse = sendJSONResponse.bind(
+  null, {status: 400, body: {message: 'Post must conform to post schema'}}
+);
 
 const readJSONRequestBody = (req) => {
   return new Promise((resolve, reject) => {
@@ -26,12 +32,12 @@ const readJSONRequestBody = (req) => {
 const getPost = async (ctx) => {
   const {res, storage, routeMatch} = ctx;
   const post = await storage.get(routeMatch.groups.id);
-  sendJSONResponse(res, {status: 200, body: post});
+  sendJSONResponse({status: 200, body: post}, res);
 };
 
 const listPosts = async (ctx) => {
   const {res, storage} = ctx;
-  sendJSONResponse(res, {status: 200,  body: { posts: await storage.list() }});
+  sendJSONResponse({status: 200,  body: { posts: await storage.list() }}, res);
 };
 
 const savePost = async (ctx) => {
@@ -40,15 +46,15 @@ const savePost = async (ctx) => {
   try {
     post = await readJSONRequestBody(req);
   } catch (err) {
-    return sendJSONResponse(res, {status: 400, body: {message: INVALID_JSON}});
+    return sendInvalidJSONResponse(res);
   }
   try {
     validatePost(post);
   } catch (err) {
-    return sendJSONResponse(res, {status: 400, body: {message: INVALID_SCHEMA}});
+    return sendInvalidSchemaResponse(res);
   }
   await storage.add(uuid(), post);
-  sendJSONResponse(res, {status: 201, body: {posts: await storage.list()}});
+  sendJSONResponse({status: 201, body: {posts: await storage.list()}}, res);
 };
 
 const updatePost = async (ctx) => {
@@ -57,21 +63,21 @@ const updatePost = async (ctx) => {
   try {
     post = await readJSONRequestBody(req);
   } catch (err) {
-    return sendJSONResponse(res, {status: 400, body: {message: INVALID_JSON}});
+    return sendInvalidJSONResponse(res);
   }
   try {
     validatePost(post);
   } catch (err) {
-    return sendJSONResponse(res, {status: 400, body: {message: INVALID_SCHEMA}});
+    return sendInvalidJSONResponse(res);
   }
   await storage.add(routeMatch.groups.id, post);
-  sendJSONResponse(res, {status: 200, body: {posts: await storage.list()}});
+  sendJSONResponse({status: 200, body: {posts: await storage.list()}}, res);
 };
 
 const deletePost = async (ctx) => {
   const {res, storage, routeMatch} = ctx;
   await storage.delete(routeMatch.groups.id);
-  sendJSONResponse(res, {status: 200, body: {posts: await storage.list()}});
+  sendJSONResponse({status: 200, body: {posts: await storage.list()}}, res);
 };
 
 export const App = (storage) => {
