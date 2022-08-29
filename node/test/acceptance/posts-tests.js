@@ -15,7 +15,7 @@ class TestRequest extends Readable {
     this.method = method;
     this.body = body;
   }
-  url
+  url;
   _read() {
     this.push(this.body);
     this.push(null);
@@ -39,14 +39,14 @@ class AssertingResponse {
 
   end(body) {
     assert.equal(this.#actualStatus, this.#expectedStatus);
-    typeof this.#expectedBody === 'function' ?
-      assert.ok(this.#expectedBody(JSON.parse(body))) :
-      assert.deepEqual(this.#expectedBody, JSON.parse(body));
+    typeof this.#expectedBody === 'function'
+      ? assert.ok(this.#expectedBody(JSON.parse(body)))
+      : assert.deepEqual(this.#expectedBody, JSON.parse(body));
     this.#end();
   }
 }
 
-test('Posts API', async t => {
+test('Posts API', async (t) => {
   const storage = Storage();
   await t.test('Listing posts', async () => {
     await storage.reset();
@@ -55,18 +55,22 @@ test('Posts API', async t => {
     const post = {
       title: '🍦 Node JS is fun',
       date,
-      body: 'Writing a CRUD api in pure node'
+      body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
     return await new Promise((resolve) => {
       const app = App(storage);
       const request = new TestRequest('GET', '/posts', null);
-      const response = new AssertingResponse(200, {posts: [id]}, resolve);
+      const response = new AssertingResponse(
+        200,
+        {posts: [{id, title: post.title}]},
+        resolve
+      );
       app(request, response);
     });
   });
 
-  await t.test('Adding a post', async _ => {
+  await t.test('Adding a post', async (_) => {
     await storage.reset();
     return await new Promise((resolve) => {
       const app = App(storage);
@@ -76,15 +80,15 @@ test('Posts API', async t => {
         date,
         body: 'Writing a CRUD api in pure node',
       };
-      const request = new TestRequest(
-        'POST',
-        '/posts',
-        JSON.stringify(post)
-      );
+      const request = new TestRequest('POST', '/posts', JSON.stringify(post));
       const response = new AssertingResponse(
         201,
         (body) => {
-          return body.posts.length === 1 && typeof body.posts[0] === 'string'
+          return (
+            body.posts.length === 1 &&
+            typeof body.posts[0].id === 'string' &&
+            typeof body.posts[0].title === 'string'
+          );
         },
         resolve
       );
@@ -92,23 +96,23 @@ test('Posts API', async t => {
     });
   });
 
-  await t.test('Adding a post with invalid JSON', async _ => {
+  await t.test('Adding a post with invalid JSON', async (_) => {
     await storage.reset();
     return await new Promise((resolve) => {
       const app = App(storage);
-      const request = new TestRequest(
-        'POST',
-        '/posts',
-        '{..some_in£#!valid'
+      const request = new TestRequest('POST', '/posts', '{..some_in£#!valid');
+      const response = new AssertingResponse(
+        400,
+        {
+          message: 'Post must be valid JSON',
+        },
+        resolve
       );
-      const response = new AssertingResponse(400, {
-        message: 'Post must be valid JSON'
-      }, resolve);
       app(request, response);
     });
   });
 
-  await t.test('Adding a post with an invalid schema', async _ => {
+  await t.test('Adding a post with an invalid schema', async (_) => {
     await storage.reset();
     return await new Promise((resolve) => {
       const app = App(storage);
@@ -117,14 +121,18 @@ test('Posts API', async t => {
         '/posts',
         JSON.stringify({wobble: 5, shnozzle: 'definitely'})
       );
-      const response = new AssertingResponse(400, {
-        message: 'Post must conform to post schema'
-      }, resolve);
+      const response = new AssertingResponse(
+        400,
+        {
+          message: 'Post must conform to post schema',
+        },
+        resolve
+      );
       app(request, response);
     });
   });
 
-  await t.test('Deleting a post', async _ => {
+  await t.test('Deleting a post', async (_) => {
     await storage.reset();
     const date = new Date().getTime();
     const id = uuid();
@@ -133,21 +141,22 @@ test('Posts API', async t => {
       date,
       body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
     return await new Promise((resolve) => {
       const app = App(storage);
-      const request = new TestRequest(
-        'DELETE',
-        `/posts/${id}`
+      const request = new TestRequest('DELETE', `/posts/${id}`);
+      const response = new AssertingResponse(
+        200,
+        {
+          posts: [],
+        },
+        resolve
       );
-      const response = new AssertingResponse(200, {
-        posts: []
-      }, resolve);
       app(request, response);
     });
   });
 
-  await t.test('Modifying a post', async _ => {
+  await t.test('Modifying a post', async (_) => {
     await storage.reset();
     const date = new Date().getTime();
     const id = uuid();
@@ -156,7 +165,7 @@ test('Posts API', async t => {
       date,
       body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
 
     post.title = 'Amended title';
 
@@ -167,16 +176,18 @@ test('Posts API', async t => {
         `/posts/${id}`,
         JSON.stringify(post)
       );
-      const response = new AssertingResponse(200, {
-        posts: [
-          id
-        ]
-      }, resolve);
+      const response = new AssertingResponse(
+        200,
+        {
+          posts: [{id, title: post.title}],
+        },
+        resolve
+      );
       app(request, response);
     });
   });
 
-  await t.test('Modifying a post with invalid JSON', async _ => {
+  await t.test('Modifying a post with invalid JSON', async (_) => {
     await storage.reset();
     const date = new Date().getTime();
     const id = uuid();
@@ -185,23 +196,23 @@ test('Posts API', async t => {
       date,
       body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
 
     return await new Promise((resolve) => {
       const app = App(storage);
-      const request = new TestRequest(
-        'PUT',
-        `/posts/${id}`,
-        's0mEGarbage}}.'
+      const request = new TestRequest('PUT', `/posts/${id}`, 's0mEGarbage}}.');
+      const response = new AssertingResponse(
+        400,
+        {
+          message: 'Post must be valid JSON',
+        },
+        resolve
       );
-      const response = new AssertingResponse(400, {
-        message: 'Post must be valid JSON'
-      }, resolve);
       app(request, response);
     });
   });
 
-  await t.test('Modifying a post an with invalid schema', async _ => {
+  await t.test('Modifying a post an with invalid schema', async (_) => {
     await storage.reset();
     const date = new Date().getTime();
     const id = uuid();
@@ -210,7 +221,7 @@ test('Posts API', async t => {
       date,
       body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
 
     return await new Promise((resolve) => {
       const app = App(storage);
@@ -219,14 +230,18 @@ test('Posts API', async t => {
         `/posts/${id}`,
         JSON.stringify({wobble: 5, shnozzle: 'definitely'})
       );
-      const response = new AssertingResponse(400, {
-        message: 'Post must conform to post schema'
-      }, resolve);
+      const response = new AssertingResponse(
+        400,
+        {
+          message: 'Post must conform to post schema',
+        },
+        resolve
+      );
       app(request, response);
     });
   });
 
-  await t.test('Getting a post', async _ => {
+  await t.test('Getting a post', async (_) => {
     await storage.reset();
     const date = new Date().getTime();
     const id = uuid();
@@ -235,17 +250,15 @@ test('Posts API', async t => {
       date,
       body: 'Writing a CRUD api in pure node',
     };
-    await storage.add(id, post)
+    await storage.add(id, post);
 
     return await new Promise((resolve) => {
       const app = App(storage);
-      const request = new TestRequest(
-        'GET',
-        `/posts/${id}`
-      );
+      const request = new TestRequest('GET', `/posts/${id}`);
       const response = new AssertingResponse(
         200,
-        JSON.stringify(post), resolve
+        JSON.stringify(post),
+        resolve
       );
       app(request, response);
     });

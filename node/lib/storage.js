@@ -1,4 +1,11 @@
-import {rm, writeFile, mkdir, access, readdir, readFile} from 'node:fs/promises';
+import {
+  rm,
+  writeFile,
+  mkdir,
+  access,
+  readdir,
+  readFile,
+} from 'node:fs/promises';
 import {tmpdir} from 'os';
 import {join} from 'path';
 
@@ -13,26 +20,37 @@ export const Storage = () => {
         await rm(POSTS_DIR, {recursive: true, force: true});
       } catch (err) {
         console.warn(`${POSTS_DIR} does not exist, creating`);
-      }
-      finally {
+      } finally {
         await mkdir(POSTS_DIR);
       }
     },
     async add(id, post) {
-      await writeFile(
-        join(POSTS_DIR, `${id}.json`),
-        JSON.stringify(post)
-      );
+      const {title} = post;
+      await Promise.all([
+        writeFile(
+          join(POSTS_DIR, `${id}.meta.json`),
+          JSON.stringify({title, id})
+        ),
+        writeFile(join(POSTS_DIR, `${id}.json`), JSON.stringify(post)),
+      ]);
     },
     async list() {
-      return (await readdir(POSTS_DIR))
-        .map(fileName => fileName.replace('.json', ''));
+      const files = await Promise.all((await readdir(POSTS_DIR))
+        .filter((fileName) => fileName.endsWith('.meta.json'))
+        .map((fileName) => readFile(join(POSTS_DIR, fileName), {encoding: 'utf8'})));
+
+      return files.map(file => JSON.parse(file));
     },
     async get(id) {
-      return await readFile(join(POSTS_DIR, `${id}.json`), {encoding: 'utf8'});
+      return await readFile(join(POSTS_DIR, `${id}.json`), {
+        encoding: 'utf8',
+      });
     },
     async delete(id) {
-      await rm(join(POSTS_DIR, `${id}.json`));
-    }
+      await Promise.all([
+        rm(join(POSTS_DIR, `${id}.json`)),
+        rm(join(POSTS_DIR, `${id}.meta.json`)),
+      ]);
+    },
   };
 };

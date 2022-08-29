@@ -6,22 +6,24 @@ const sendJSONResponse = (options, res) => {
   res.end(JSON.stringify(options.body));
 };
 
-const sendInvalidJSONResponse = sendJSONResponse.bind(
-  null, {status: 400, body: {message: 'Post must be valid JSON'}}
-);
+const sendInvalidJSONResponse = sendJSONResponse.bind(null, {
+  status: 400,
+  body: {message: 'Post must be valid JSON'},
+});
 
-const sendInvalidSchemaResponse = sendJSONResponse.bind(
-  null, {status: 400, body: {message: 'Post must conform to post schema'}}
-);
+const sendInvalidSchemaResponse = sendJSONResponse.bind(null, {
+  status: 400,
+  body: {message: 'Post must conform to post schema'},
+});
 
 const readJSONRequestBody = (req) => {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', data => body += data.toString('utf8'));
+    req.on('data', (data) => (body += data.toString('utf8')));
     req.on('end', async () => {
       try {
         resolve(JSON.parse(body));
-      } catch(err) {
+      } catch (err) {
         reject(err);
       }
     });
@@ -37,7 +39,7 @@ const getPost = async (ctx) => {
 
 const listPosts = async (ctx) => {
   const {res, storage} = ctx;
-  sendJSONResponse({status: 200,  body: { posts: await storage.list() }}, res);
+  sendJSONResponse({status: 200, body: {posts: await storage.list()}}, res);
 };
 
 const saveOrUpdatePost = async (id, successStatus, ctx) => {
@@ -54,7 +56,10 @@ const saveOrUpdatePost = async (id, successStatus, ctx) => {
     return sendInvalidSchemaResponse(res);
   }
   await storage.add(id, post);
-  sendJSONResponse({status: successStatus, body: {posts: await storage.list()}}, res);
+  sendJSONResponse(
+    {status: successStatus, body: {posts: await storage.list()}},
+    res
+  );
 };
 
 const savePost = async (ctx) => {
@@ -72,7 +77,8 @@ const deletePost = async (ctx) => {
 };
 
 export const App = (storage) => {
-  const matchUUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const matchUUID =
+    '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
   const routes = [
     ['GET', /\/posts$/, listPosts],
     ['POST', '/posts', savePost],
@@ -83,18 +89,18 @@ export const App = (storage) => {
 
   return (req, res) => {
     let routeMatch;
-    const route = routes.find(route => {
+    const route = routes.find((route) => {
       const [method, url] = route;
       routeMatch = req.url.match(url);
       if (routeMatch && req.method === method) {
         return routeMatch;
-      };
+      }
     });
     if (route) {
-      const handler = route[2]
+      const handler = route[2];
       return handler({req, res, storage, routeMatch});
     }
     res.writeHead(404, {'Content-Type': 'text/plain'});
-    res.end("Not Found");
+    res.end('Not Found');
   };
 };
