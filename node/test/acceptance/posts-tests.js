@@ -255,11 +255,7 @@ test('Posts API', async (t) => {
     return await new Promise((resolve) => {
       const app = App(storage);
       const request = new TestRequest('GET', `/posts/${id}`);
-      const response = new AssertingResponse(
-        200,
-        JSON.stringify(post),
-        resolve
-      );
+      const response = new AssertingResponse(200, post, resolve);
       app(request, response);
     });
   });
